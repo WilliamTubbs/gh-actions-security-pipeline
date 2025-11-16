@@ -30,19 +30,18 @@ jobs:
           python --version
           python -m pip --version
           python -m pip list | grep -E 'pytest|safety|bandit' || true
-
-      - name: Quick import debug
-        run: |
-          python -c "import sys,os;print('cwd:',os.getcwd());print('PYTHONPATH:',os.environ.get('PYTHONPATH'));print('sys.path[:3]:',sys.path[:3])"
-          python -c "import sample_app, importlib; print('sample_app at:', sample_app.__file__); importlib.import_module('sample_app.calculator'); print('calculator import OK')"
-
+ 
       - name: Run Tests
         run: python -m pytest -q tests/
 
-      - name: Security Check 1 - Dependency Scan
-        run: python -m safety check
-        continue-on-error: true
-
-      - name: Security Check 2 - Code Security Scan
-        run: python -m bandit -r src/ -ll
-        continue-on-error: true
+      - name: Security Check 1 - Dependency Scan 
+        run: python -m safety check --full-report --file=requirements.txt
+          echo "🔍 Checking for vulnerable dependencies..."
+          safety check 
+         continue-on-error: true 
+         
+       - name: Security Check 2 - Code Security Scan
+         run: python -m bandit -r src/ -ll
+          echo "🔐 Scanning code for security issues..." 
+          bandit -r src/ -ll 
+         continue-on-error: true
