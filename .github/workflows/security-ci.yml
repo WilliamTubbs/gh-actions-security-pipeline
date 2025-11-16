@@ -1,37 +1,46 @@
 name: CI with Security Checks
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
   test-and-scan:
     runs-on: ubuntu-latest
     env:
+      # Make 'sample_app' (under src/) importable in tests
       PYTHONPATH: ${{ github.workspace }}/src
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install safety bandit
 
       - name: Debug Python path
         run: |
           echo "Workspace: $GITHUB_WORKSPACE"
-          python -c "import sys,os;print('cwd:',os.getcwd());print('PYTHONPATH env:',os.environ.get('PYTHONPATH'));print('sys.path head:',sys.path[:5])"
-          echo "--- repo tree ---"
+          python - <<'PY'
+          import sys, os, importlib
+          print("cwd:", os.getcwd())
+          print("env PYTHONPATH:", os.environ.get("PYTHONPATH"))
+          print("sys.path head:", sys.path[:5])
+          m = importlib.import_module("sample_app.calculator")
+          print("calculator:", m.__file__)
+          PY
           ls -R
-          echo "--- import check ---"
-          python -c "import sample_app, importlib; print('sample_app file:', sample_app.__file__); importlib.import_module('sample_app.calculator'); print('calculator import OK')"
 
       - name: Run Tests
-        run: pytest tests/
+        run: pytest -q tests/
 
       - name: Security Check 1 - Dependency Scan
         run: |
@@ -44,3 +53,5 @@ jobs:
           echo "🔐 Scanning code for security issues..."
           bandit -r src/ -ll
         continue-on-error: true
+
+
