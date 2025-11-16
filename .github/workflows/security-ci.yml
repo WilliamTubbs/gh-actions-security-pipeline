@@ -1,1 +1,46 @@
-[name and YAML from above... paste exactly]
+name: CI with Security Checks
+
+on: [push, pull_request]
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install safety bandit
+
+      - name: Debug Python path
+        run: |
+          echo "Workspace: $GITHUB_WORKSPACE"
+          python -c "import sys,os;print('cwd:',os.getcwd());print('PYTHONPATH env:',os.environ.get('PYTHONPATH'));print('sys.path head:',sys.path[:5])"
+          echo "--- repo tree ---"
+          ls -R
+          echo "--- import check ---"
+          python -c "import sample_app, importlib; print('sample_app file:', sample_app.__file__); importlib.import_module('sample_app.calculator'); print('calculator import OK')"
+
+      - name: Run Tests
+        run: pytest tests/
+
+      - name: Security Check 1 - Dependency Scan
+        run: |
+          echo "🔍 Checking for vulnerable dependencies..."
+          safety check
+        continue-on-error: true
+
+      - name: Security Check 2 - Code Security Scan
+        run: |
+          echo "🔐 Scanning code for security issues..."
+          bandit -r src/ -ll
+        continue-on-error: true
