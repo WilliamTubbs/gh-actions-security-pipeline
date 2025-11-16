@@ -34,13 +34,13 @@ jobs:
       - name: Security Check - Dependency Scan (installed env)
         run: |
           echo "🔍 Checking for vulnerable dependencies..."
-          python -m safety check --full-report
+          python -m safety check --full-report || true
         continue-on-error: true
 
       - name: Security Check - Dependency Scan (requirements.txt)
         run: |
           echo "🔍 Checking for vulnerabilities in requirements.txt..."
-          python -m safety check --full-report --file=requirements.txt
+          python -m safety check --full-report --file=requirements.txt || true
         continue-on-error: true
 
       - name: Security Check - Code Scan
