@@ -8,7 +8,6 @@ jobs:
   test-and-scan:
     runs-on: ubuntu-latest
     env:
-      # Make 'sample_app' (under src/) importable in tests
       PYTHONPATH: ${{ github.workspace }}/src
 
     steps:
@@ -23,35 +22,27 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install safety bandit
+          python -m pip install -r requirements.txt
+          python -m pip install safety bandit pytest
 
-      - name: Debug Python path
+      - name: Show tool versions
         run: |
-          echo "Workspace: $GITHUB_WORKSPACE"
-          python - <<'PY'
-          import sys, os, importlib
-          print("cwd:", os.getcwd())
-          print("env PYTHONPATH:", os.environ.get("PYTHONPATH"))
-          print("sys.path head:", sys.path[:5])
-          m = importlib.import_module("sample_app.calculator")
-          print("calculator:", m.__file__)
-          PY
-          ls -R
+          python --version
+          python -m pip --version
+          python -m pip list | grep -E 'pytest|safety|bandit' || true
+
+      - name: Quick import debug
+        run: |
+          python -c "import sys,os;print('cwd:',os.getcwd());print('PYTHONPATH:',os.environ.get('PYTHONPATH'));print('sys.path[:3]:',sys.path[:3])"
+          python -c "import sample_app, importlib; print('sample_app at:', sample_app.__file__); importlib.import_module('sample_app.calculator'); print('calculator import OK')"
 
       - name: Run Tests
-        run: pytest -q tests/
+        run: python -m pytest -q tests/
 
       - name: Security Check 1 - Dependency Scan
-        run: |
-          echo "🔍 Checking for vulnerable dependencies..."
-          safety check
+        run: python -m safety check
         continue-on-error: true
 
       - name: Security Check 2 - Code Security Scan
-        run: |
-          echo "🔐 Scanning code for security issues..."
-          bandit -r src/ -ll
+        run: python -m bandit -r src/ -ll
         continue-on-error: true
-
-
