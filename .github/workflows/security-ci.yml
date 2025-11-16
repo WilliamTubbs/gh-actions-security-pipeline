@@ -19,6 +19,12 @@ jobs:
           pip install -r requirements.txt
           pip install safety bandit
 
+      - name: Debug listing
+        run: |
+          pwd
+          python -c "import sys; print('PYTHONPATH:', sys.path)"
+          ls -R
+
       - name: Run Tests
         env:
           PYTHONPATH: ${{ github.workspace }}/src
