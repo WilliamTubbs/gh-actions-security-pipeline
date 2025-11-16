@@ -21,7 +21,7 @@ jobs:
 
       - name: Run Tests
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/src
         run: pytest tests/
 
       - name: Security Check 1 - Dependency Scan
